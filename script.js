@@ -1,604 +1,467 @@
-// script_full.js - نظام إدارة عقود الاعتماد الأكاديمي (محدث)
+// Academic Accreditation Contracts Management System - Version 3.0 (Accurate University Data)
+// تاريخ التحديث: 2024-11-30
 
-// ========== Initialize ========== 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('تحميل النظام المحدث...');
-    console.log('عدد العقود:', allContracts.length);
-    
-    initializeApp();
+// تهيئة البيانات عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+    loadExpiryAnalysis();
+    loadUniversitiesAnalysis();
+    loadDepartmentsAnalysis();
+    loadSpecializationsAnalysis();
 });
 
-function initializeApp() {
-    // Update header statistics
-    updateHeaderStats();
+// تحميل الإحصائيات العامة
+function loadStatistics() {
+    const statsContainer = document.getElementById('generalStats');
     
-    // Initialize overview section
-    initOverviewSection();
+    // حساب إحصائيات حقيقية من البيانات
+    const totalContracts = contractsData.length;
+    const activeContracts = contractsData.filter(c => c.status === 'ساري').length;
+    const expiredContracts = contractsData.filter(c => c.status === 'منتهي').length;
+    const pendingContracts = contractsData.filter(c => c.status === 'معلق').length;
     
-    // Initialize navigation
-    initNavigation();
+    // عدد الجامعات الفريدة
+    const universities = [...new Set(contractsData.map(c => c.university))];
     
-    // Initialize expiry section
-    initExpirySection();
+    // عدد الإدارات الفريدة
+    const departments = [...new Set(contractsData.map(c => c.department))];
     
-    // Initialize universities section
-    initUniversitiesSection();
-    
-    // Initialize departments section
-    initDepartmentsSection();
-    
-    // Initialize programs section
-    initProgramsSection();
-    
-    // Update last update time
-    document.getElementById('lastUpdate').textContent = statistics.generatedAt;
-    
-    console.log('✅ تم تحميل النظام بنجاح');
-}
-
-// ========== Header Statistics ==========
-function updateHeaderStats() {
-    document.getElementById('totalContracts').textContent = statistics.totalContracts;
-    document.getElementById('totalUniversities').textContent = statistics.totalUniversities;
-}
-
-// ========== Navigation ==========
-function initNavigation() {
-    const navLinks = document.querySelectorAll('.nav-link');
-    const sections = document.querySelectorAll('.content-section');
-    
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // Remove active from all
-            navLinks.forEach(l => l.classList.remove('active'));
-            sections.forEach(s => s.classList.remove('active'));
-            
-            // Add active to clicked
-            link.classList.add('active');
-            const sectionId = link.getAttribute('data-section');
-            document.getElementById(sectionId).classList.add('active');
-        });
-    });
-}
-
-// ========== Overview Section ==========
-function initOverviewSection() {
-    // Update expiry counts
-    document.getElementById('before2024').textContent = expiryAnalysis.before2024;
-    document.getElementById('h1_2025').textContent = expiryAnalysis.h1_2025;
-    document.getElementById('h2_2025').textContent = expiryAnalysis.h2_2025;
-    document.getElementById('y2026Plus').textContent = expiryAnalysis.year2026Plus;
-    
-    // Render departments summary
-    renderDepartmentsSummary();
-    
-    // Render top universities
-    renderTopUniversities();
-}
-
-function renderDepartmentsSummary() {
-    const container = document.getElementById('deptSummary');
-    container.innerHTML = '';
-    
-    Object.entries(departmentAnalysis).forEach(([dept, contracts]) => {
-        const item = document.createElement('div');
-        item.className = 'dept-item';
-        item.innerHTML = `
-            <span class="dept-name">${dept}</span>
-            <span class="dept-count">${contracts.length}</span>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderTopUniversities() {
-    const container = document.getElementById('topUniversities');
-    container.innerHTML = '';
-    
-    const maxCount = Math.max(...Object.values(universityAnalysis).map(c => c.length));
-    
-    Object.entries(universityAnalysis).slice(0, 10).forEach(([uni, contracts], index) => {
-        const percentage = (contracts.length / maxCount) * 100;
-        
-        const item = document.createElement('div');
-        item.className = 'uni-rank-item';
-        item.innerHTML = `
-            <div class="uni-rank">${index + 1}</div>
-            <div class="uni-rank-info">
-                <div class="uni-rank-name">${uni}</div>
-                <div class="uni-rank-count">${contracts.length} عقد</div>
-            </div>
-            <div class="uni-rank-bar">
-                <div class="uni-rank-bar-fill" style="width: ${percentage}%"></div>
-            </div>
-        `;
-        
-        item.addEventListener('click', () => {
-            showUniversityContracts(uni, contracts);
-        });
-        
-        container.appendChild(item);
-    });
-}
-
-// ========== Expiry Section ==========
-function initExpirySection() {
-    const tabBtns = document.querySelectorAll('#expiry .tab-btn');
-    
-    // Show all contracts by default
-    renderExpiryContracts('all');
-    
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Remove active from all
-            tabBtns.forEach(b => b.classList.remove('active'));
-            
-            // Add active to clicked
-            btn.classList.add('active');
-            
-            // Render contracts for selected period
-            const period = btn.getAttribute('data-period');
-            renderExpiryContracts(period);
-        });
-    });
-}
-
-function renderExpiryContracts(period) {
-    const container = document.getElementById('expiryContracts');
-    container.innerHTML = '';
-    
-    let contractsToShow = [];
-    
-    if (period === 'all') {
-        contractsToShow = allContracts;
-    } else if (period === 'before2024') {
-        contractsToShow = expiryAnalysis.data['قبل نهاية 2024'];
-    } else if (period === 'h1_2025') {
-        contractsToShow = expiryAnalysis.data['النصف الأول 2025'];
-    } else if (period === 'h2_2025') {
-        contractsToShow = expiryAnalysis.data['النصف الثاني 2025'];
-    } else if (period === 'y2026Plus') {
-        contractsToShow = expiryAnalysis.data['2026 وما بعد'];
-    }
-    
-    if (contractsToShow.length === 0) {
-        container.innerHTML = '<p class="text-center">لا توجد عقود في هذه الفترة</p>';
-        return;
-    }
-    
-    contractsToShow.forEach(contract => {
-        const card = createContractCard(contract);
-        container.appendChild(card);
-    });
-}
-
-function createContractCard(contract) {
-    const card = document.createElement('div');
-    
-    // Determine urgency class
-    const endDate = parseDate(contract.contractEnd);
-    const now = new Date();
-    const daysUntilExpiry = Math.floor((endDate - now) / (1000 * 60 * 60 * 24));
-    
-    let urgencyClass = 'safe';
-    if (daysUntilExpiry < 0) {
-        urgencyClass = 'urgent';
-    } else if (daysUntilExpiry < 180) {
-        urgencyClass = 'warning';
-    } else if (daysUntilExpiry < 365) {
-        urgencyClass = 'attention';
-    }
-    
-    card.className = `contract-card ${urgencyClass}`;
-    card.innerHTML = `
-        <div class="contract-header">
-            <div class="contract-id">عقد #${contract.id}</div>
-            <div class="contract-university">${contract.university}</div>
-            <div class="contract-program">${contract.program}</div>
+    statsContainer.innerHTML = `
+        <div class="stat-card">
+            <h3>إجمالي العقود</h3>
+            <p class="stat-number">${totalContracts}</p>
         </div>
-        <div class="contract-body">
-            <div class="contract-info">
-                <span class="info-label">الدرجة العلمية:</span>
-                <span class="info-value">${contract.degree}</span>
-            </div>
-            <div class="contract-info">
-                <span class="info-label">الإدارة المختصة:</span>
-                <span class="info-value">${contract.department}</span>
-            </div>
-            <div class="contract-info">
-                <span class="info-label">بداية العقد:</span>
-                <span class="info-value">${contract.contractStart}</span>
-            </div>
-            <div class="contract-info">
-                <span class="info-label">انتهاء العقد:</span>
-                <span class="info-value">${contract.contractEnd}</span>
-            </div>
-            <div class="contract-info">
-                <span class="info-label">نسبة الإنجاز:</span>
-                <span class="info-value">${contract.progress}</span>
-            </div>
-            <div class="contract-info">
-                <span class="info-label">الحالة:</span>
-                <span class="info-value">
-                    <span class="contract-badge ${getStatusClass(contract.status)}">${contract.status}</span>
-                </span>
-            </div>
+        <div class="stat-card">
+            <h3>عقود سارية</h3>
+            <p class="stat-number">${activeContracts}</p>
+        </div>
+        <div class="stat-card">
+            <h3>عقود منتهية</h3>
+            <p class="stat-number">${expiredContracts}</p>
+        </div>
+        <div class="stat-card">
+            <h3>عقود معلقة</h3>
+            <p class="stat-number">${pendingContracts}</p>
+        </div>
+        <div class="stat-card">
+            <h3>عدد الجامعات</h3>
+            <p class="stat-number">${universities.length}</p>
+        </div>
+        <div class="stat-card">
+            <h3>عدد الإدارات</h3>
+            <p class="stat-number">${departments.length}</p>
         </div>
     `;
-    
-    card.addEventListener('click', () => {
-        showContractDetail(contract);
-    });
-    
-    return card;
 }
 
-function getStatusClass(status) {
-    if (status === 'ساري') return 'badge-active';
-    if (status === 'منتهي') return 'badge-expired';
-    return 'badge-pending';
-}
-
-// ========== Universities Section ==========
-function initUniversitiesSection() {
-    renderUniversitiesList();
+// تحليل العقود حسب تاريخ الانتهاء
+function loadExpiryAnalysis() {
+    const container = document.getElementById('expiryContracts');
     
-    // Search functionality
-    const searchInput = document.getElementById('uniSearch');
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        filterUniversities(query);
-    });
-}
-
-function renderUniversitiesList() {
-    const container = document.getElementById('universitiesList');
-    container.innerHTML = '';
+    // تصنيف العقود حسب تاريخ الانتهاء
+    const today = new Date();
+    const endOf2024 = new Date('2024-12-31');
+    const endOfH1_2025 = new Date('2025-06-30');
+    const endOfH2_2025 = new Date('2025-12-31');
     
-    Object.entries(universityAnalysis).forEach(([uni, contracts]) => {
-        const item = document.createElement('div');
-        item.className = 'university-item';
-        item.setAttribute('data-university', uni);
-        
-        item.innerHTML = `
-            <div class="university-header">
-                <span class="university-name">${uni}</span>
-                <span class="university-count">${contracts.length} عقد</span>
-            </div>
-            <div class="university-contracts" id="uni-${uni.replace(/\s+/g, '-')}">
-                <!-- Contracts will be loaded on expand -->
-            </div>
-        `;
-        
-        const header = item.querySelector('.university-header');
-        header.addEventListener('click', () => {
-            toggleUniversityItem(item, uni, contracts);
-        });
-        
-        container.appendChild(item);
-    });
-}
-
-function toggleUniversityItem(item, uni, contracts) {
-    const isExpanded = item.classList.contains('expanded');
-    
-    // Collapse all
-    document.querySelectorAll('.university-item').forEach(u => {
-        u.classList.remove('expanded');
-    });
-    
-    if (!isExpanded) {
-        item.classList.add('expanded');
-        
-        // Load contracts if not loaded
-        const contractsContainer = item.querySelector('.university-contracts');
-        if (contractsContainer.children.length === 0) {
-            const grid = document.createElement('div');
-            grid.className = 'contracts-grid';
-            
-            contracts.forEach(contract => {
-                const card = createContractCard(contract);
-                grid.appendChild(card);
-            });
-            
-            contractsContainer.appendChild(grid);
-        }
-    }
-}
-
-function filterUniversities(query) {
-    const items = document.querySelectorAll('.university-item');
-    
-    items.forEach(item => {
-        const uni = item.getAttribute('data-university');
-        if (query === '' || uni.includes(query)) {
-            item.style.display = 'block';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-}
-
-function showUniversityContracts(uni, contracts) {
-    // Switch to universities section
-    document.querySelector('[data-section="universities"]').click();
-    
-    // Find and expand the university
-    setTimeout(() => {
-        const items = document.querySelectorAll('.university-item');
-        items.forEach(item => {
-            if (item.getAttribute('data-university') === uni) {
-                item.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                setTimeout(() => {
-                    item.querySelector('.university-header').click();
-                }, 500);
-            }
-        });
-    }, 100);
-}
-
-// ========== Departments Section ==========
-function initDepartmentsSection() {
-    renderDepartmentsList();
-}
-
-function renderDepartmentsList() {
-    const container = document.getElementById('departmentsList');
-    container.innerHTML = '';
-    
-    const departmentColors = {
-        'العلوم الإنسانية والتربوية': 'linear-gradient(135deg, #3F51B5 0%, #5C6BC0 100%)',
-        'العلوم الهندسية والحاسوبية': 'linear-gradient(135deg, #FF6F00 0%, #FF8F00 100%)',
-        'العلوم الصحية': 'linear-gradient(135deg, #D32F2F 0%, #E57373 100%)',
-        'العلوم الإسلامية والعربية': 'linear-gradient(135deg, #388E3C 0%, #66BB6A 100%)',
-        'التخصصات العلمية': 'linear-gradient(135deg, #1976D2 0%, #42A5F5 100%)'
+    const categories = {
+        'before2025': { title: 'قبل نهاية 2024', contracts: [], color: '#e74c3c' },
+        'h1_2025': { title: 'النصف الأول 2025', contracts: [], color: '#e67e22' },
+        'h2_2025': { title: 'النصف الثاني 2025', contracts: [], color: '#f39c12' },
+        'after2025': { title: '2026 وما بعد', contracts: [], color: '#27ae60' }
     };
     
-    Object.entries(departmentAnalysis).forEach(([dept, contracts]) => {
-        const card = document.createElement('div');
-        card.className = 'department-card';
+    contractsData.forEach(contract => {
+        const endDate = parseDate(contract.contractEnd);
         
-        const color = departmentColors[dept] || 'linear-gradient(135deg, #00695C 0%, #00897B 100%)';
-        
-        card.innerHTML = `
-            <div class="department-header" style="background: ${color}">
-                <div class="department-name">${dept}</div>
-                <div class="department-count">${contracts.length} عقد</div>
-            </div>
-            <div class="department-contracts" id="dept-${dept.replace(/\s+/g, '-')}">
-                <!-- Contracts will be loaded on expand -->
+        if (endDate <= endOf2024) {
+            categories['before2025'].contracts.push(contract);
+        } else if (endDate <= endOfH1_2025) {
+            categories['h1_2025'].contracts.push(contract);
+        } else if (endDate <= endOfH2_2025) {
+            categories['h2_2025'].contracts.push(contract);
+        } else {
+            categories['after2025'].contracts.push(contract);
+        }
+    });
+    
+    // عرض التصنيفات
+    let html = '';
+    Object.keys(categories).forEach(key => {
+        const cat = categories[key];
+        html += `
+            <div class="expiry-section">
+                <div class="expiry-header" style="background: ${cat.color}">
+                    <h3>${cat.title}</h3>
+                    <span class="badge">${cat.contracts.length} عقد</span>
+                </div>
+                <div class="contracts-grid">
+                    ${cat.contracts.map(contract => createContractCard(contract)).join('')}
+                </div>
             </div>
         `;
-        
-        const header = card.querySelector('.department-header');
-        header.addEventListener('click', () => {
-            toggleDepartmentCard(card, dept, contracts);
-        });
-        
-        container.appendChild(card);
     });
+    
+    container.innerHTML = html;
 }
 
-function toggleDepartmentCard(card, dept, contracts) {
-    const isExpanded = card.classList.contains('expanded');
+// تحليل العقود حسب الجامعات - محسّن ودقيق
+function loadUniversitiesAnalysis() {
+    const container = document.getElementById('universitiesContracts');
     
-    if (isExpanded) {
-        card.classList.remove('expanded');
+    // جمع كل العقود حسب الجامعة
+    const universitiesData = {};
+    
+    contractsData.forEach(contract => {
+        const uni = contract.university;
+        if (!universitiesData[uni]) {
+            universitiesData[uni] = [];
+        }
+        universitiesData[uni].push(contract);
+    });
+    
+    // تحويل إلى مصفوفة وترتيب حسب عدد العقود
+    const universitiesArray = Object.keys(universitiesData).map(uni => ({
+        name: uni,
+        contracts: universitiesData[uni],
+        count: universitiesData[uni].length
+    })).sort((a, b) => b.count - a.count);
+    
+    // إنشاء قائمة الفلتر
+    let filterHTML = `
+        <div class="university-filter">
+            <label for="universitySelect">فلترة حسب الجامعة:</label>
+            <select id="universitySelect" onchange="filterByUniversity(this.value)">
+                <option value="all">جميع الجامعات (${universitiesArray.length} جامعة)</option>
+                ${universitiesArray.map(uni => 
+                    `<option value="${uni.name}">${uni.name} (${uni.count} عقد)</option>`
+                ).join('')}
+            </select>
+        </div>
+        <div class="university-search">
+            <input type="text" id="universitySearch" placeholder="بحث عن جامعة..." 
+                   onkeyup="searchUniversity(this.value)">
+        </div>
+    `;
+    
+    // إنشاء بطاقات الجامعات
+    let universitiesHTML = '<div id="universitiesList">';
+    universitiesArray.forEach(uni => {
+        universitiesHTML += `
+            <div class="university-card" data-university="${uni.name}">
+                <div class="university-header">
+                    <h3>${uni.name}</h3>
+                    <span class="badge">${uni.count} عقد</span>
+                </div>
+                <div class="university-body">
+                    <button class="btn-expand" onclick="toggleUniversityContracts('${uni.name}')">
+                        عرض العقود
+                    </button>
+                    <div class="university-contracts" id="uni-${uni.name.replace(/\s+/g, '-')}" style="display:none;">
+                        <div class="contracts-grid">
+                            ${uni.contracts.map(contract => createContractCard(contract)).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    universitiesHTML += '</div>';
+    
+    container.innerHTML = filterHTML + universitiesHTML;
+}
+
+// فلترة حسب الجامعة
+function filterByUniversity(universityName) {
+    const allCards = document.querySelectorAll('.university-card');
+    
+    if (universityName === 'all') {
+        allCards.forEach(card => card.style.display = 'block');
     } else {
-        card.classList.add('expanded');
-        
-        // Load contracts if not loaded
-        const contractsContainer = card.querySelector('.department-contracts');
-        if (contractsContainer.children.length === 0) {
-            const grid = document.createElement('div');
-            grid.className = 'contracts-grid';
-            
-            contracts.forEach(contract => {
-                const card = createContractCard(contract);
-                grid.appendChild(card);
-            });
-            
-            contractsContainer.appendChild(grid);
-        }
+        allCards.forEach(card => {
+            if (card.getAttribute('data-university') === universityName) {
+                card.style.display = 'block';
+                // فتح العقود تلقائياً عند الفلترة
+                const uniId = 'uni-' + universityName.replace(/\s+/g, '-');
+                document.getElementById(uniId).style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
     }
 }
 
-// ========== Programs Section ==========
-function initProgramsSection() {
-    const tabBtns = document.querySelectorAll('#programs .tab-btn');
+// بحث في الجامعات
+function searchUniversity(searchText) {
+    const allCards = document.querySelectorAll('.university-card');
+    const searchLower = searchText.toLowerCase();
     
-    // Show all programs by default
-    renderProgramsList('all');
-    
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Remove active from all
-            tabBtns.forEach(b => b.classList.remove('active'));
-            
-            // Add active to clicked
-            btn.classList.add('active');
-            
-            // Render programs for selected department
-            const dept = btn.getAttribute('data-dept');
-            renderProgramsList(dept);
-        });
+    allCards.forEach(card => {
+        const uniName = card.getAttribute('data-university').toLowerCase();
+        if (uniName.includes(searchLower)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
     });
 }
 
-function renderProgramsList(dept) {
-    const container = document.getElementById('programsList');
-    container.innerHTML = '';
+// تبديل عرض عقود الجامعة
+function toggleUniversityContracts(universityName) {
+    const uniId = 'uni-' + universityName.replace(/\s+/g, '-');
+    const contractsDiv = document.getElementById(uniId);
     
-    // Group contracts by program
-    const programsMap = {};
+    if (contractsDiv.style.display === 'none') {
+        contractsDiv.style.display = 'block';
+    } else {
+        contractsDiv.style.display = 'none';
+    }
+}
+
+// تحليل العقود حسب الإدارات
+function loadDepartmentsAnalysis() {
+    const container = document.getElementById('departmentsContracts');
     
-    allContracts.forEach(contract => {
-        if (dept !== 'all' && contract.department !== dept) {
-            return;
+    // جمع العقود حسب الإدارة
+    const departmentsData = {};
+    
+    contractsData.forEach(contract => {
+        const dept = contract.department;
+        if (!departmentsData[dept]) {
+            departmentsData[dept] = [];
         }
-        
-        const key = `${contract.program}|${contract.department}`;
-        if (!programsMap[key]) {
-            programsMap[key] = [];
-        }
-        programsMap[key].push(contract);
+        departmentsData[dept].push(contract);
     });
     
-    // Sort by count
-    const sortedPrograms = Object.entries(programsMap).sort((a, b) => b[1].length - a[1].length);
+    // تحويل إلى مصفوفة
+    const departmentsArray = Object.keys(departmentsData).map(dept => ({
+        name: dept,
+        contracts: departmentsData[dept],
+        count: departmentsData[dept].length
+    }));
     
-    sortedPrograms.forEach(([key, contracts]) => {
-        const [program, department] = key.split('|');
-        
-        const card = document.createElement('div');
-        card.className = 'program-card';
-        card.innerHTML = `
-            <div class="program-name">${program}</div>
-            <div class="program-dept">${department}</div>
-            <span class="program-count">${contracts.length} عقد</span>
+    // عرض الإدارات
+    let html = '';
+    departmentsArray.forEach(dept => {
+        html += `
+            <div class="department-section">
+                <div class="department-header">
+                    <h3>${dept.name}</h3>
+                    <span class="badge">${dept.count} عقد</span>
+                </div>
+                <div class="contracts-grid">
+                    ${dept.contracts.map(contract => createContractCard(contract)).join('')}
+                </div>
+            </div>
         `;
-        
-        card.addEventListener('click', () => {
-            showProgramContracts(program, contracts);
-        });
-        
-        container.appendChild(card);
     });
+    
+    container.innerHTML = html;
 }
 
-function showProgramContracts(program, contracts) {
-    const modal = document.getElementById('contractModal');
-    const detail = document.getElementById('contractDetail');
+// تحليل العقود حسب التخصصات
+function loadSpecializationsAnalysis() {
+    const container = document.getElementById('specializationsContracts');
     
-    detail.innerHTML = `
-        <h2 class="detail-title">${program}</h2>
-        <p style="margin-bottom: 24px; color: #616161;">عدد العقود: ${contracts.length}</p>
-        <div class="contracts-grid">
-            ${contracts.map(c => createContractCard(c).outerHTML).join('')}
-        </div>
-    `;
+    // جمع العقود حسب التخصص
+    const specsData = {};
     
-    modal.classList.add('active');
-    
-    // Re-attach click events for contract cards
-    detail.querySelectorAll('.contract-card').forEach((card, idx) => {
-        card.addEventListener('click', () => {
-            showContractDetail(contracts[idx]);
-        });
+    contractsData.forEach(contract => {
+        const spec = contract.program;
+        if (!specsData[spec]) {
+            specsData[spec] = [];
+        }
+        specsData[spec].push(contract);
     });
+    
+    // تحويل إلى مصفوفة وترتيب
+    const specsArray = Object.keys(specsData).map(spec => ({
+        name: spec,
+        contracts: specsData[spec],
+        count: specsData[spec].length
+    })).sort((a, b) => b.count - a.count);
+    
+    // عرض التخصصات
+    let html = '<div class="specializations-grid">';
+    specsArray.forEach(spec => {
+        html += `
+            <div class="spec-card" onclick="showSpecContracts('${spec.name}')">
+                <h4>${spec.name}</h4>
+                <span class="badge">${spec.count} عقد</span>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+    
+    // حفظ بيانات التخصصات للاستخدام لاحقاً
+    window.specializationsData = specsData;
 }
 
-// ========== Contract Detail Modal ==========
-function showContractDetail(contract) {
-    const modal = document.getElementById('contractModal');
-    const detail = document.getElementById('contractDetail');
+// عرض عقود تخصص معين
+function showSpecContracts(specName) {
+    const contracts = window.specializationsData[specName];
     
-    detail.innerHTML = `
-        <h2 class="detail-title">تفاصيل العقد #${contract.id}</h2>
-        
-        <div class="detail-grid">
-            <div class="detail-item">
-                <span class="detail-label">الجامعة / الكلية</span>
-                <span class="detail-value">${contract.university}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">اسم البرنامج</span>
-                <span class="detail-value">${contract.program}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">الدرجة العلمية</span>
-                <span class="detail-value">${contract.degree}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">الإدارة المختصة</span>
-                <span class="detail-value">${contract.department}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">حالة العقد</span>
-                <span class="detail-value">
-                    <span class="contract-badge ${getStatusClass(contract.status)}">${contract.status}</span>
-                </span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">نسبة الإنجاز</span>
-                <span class="detail-value">${contract.progress}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">بداية سريان العقد</span>
-                <span class="detail-value">${contract.contractStart}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">انتهاء سريان العقد</span>
-                <span class="detail-value">${contract.contractEnd}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">تاريخ استلام الوثائق</span>
-                <span class="detail-value">${contract.docsReceived}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">اتباع شروط الاعتماد لتاريخ استلام الوثائق</span>
-                <span class="detail-value">${contract.docsComplianceStatus}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">اتباع شروط استلام الوثائق المحدثة</span>
-                <span class="detail-value">${contract.docsUpdatedStatus}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">تاريخ استلام الوثائق المحدثة</span>
-                <span class="detail-value">${contract.docsUpdated}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">التاريخ المجدول لزيارة المراجعين</span>
-                <span class="detail-value">${contract.visitScheduled}</span>
-            </div>
-            
-            <div class="detail-item">
-                <span class="detail-label">اتباع شروط التاريخ المجدول لزيارة المراجعين</span>
-                <span class="detail-value">${contract.visitComplianceStatus}</span>
+    let html = `
+        <div class="modal-overlay" onclick="closeModal()">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>عقود تخصص: ${specName}</h2>
+                    <button class="close-btn" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>عدد العقود: ${contracts.length}</p>
+                    <div class="contracts-grid">
+                        ${contracts.map(contract => createContractCard(contract)).join('')}
+                    </div>
+                </div>
             </div>
         </div>
     `;
     
-    modal.classList.add('active');
+    document.body.insertAdjacentHTML('beforeend', html);
 }
 
-// Close modal
-document.querySelector('.close-modal').addEventListener('click', () => {
-    document.getElementById('contractModal').classList.remove('active');
-});
+// إنشاء بطاقة عقد
+function createContractCard(contract) {
+    const urgencyClass = getUrgencyClass(contract.contractEnd);
+    
+    return `
+        <div class="contract-card ${urgencyClass}" onclick="showContractDetails(${contract.id})">
+            <h4>${contract.university}</h4>
+            <p><strong>البرنامج:</strong> ${contract.program}</p>
+            <p><strong>الدرجة:</strong> ${contract.degree}</p>
+            <p><strong>الحالة:</strong> ${contract.status}</p>
+            <p><strong>تاريخ الانتهاء:</strong> ${contract.contractEnd}</p>
+            <p><strong>نسبة الإنجاز:</strong> ${contract.progress}</p>
+        </div>
+    `;
+}
 
-document.getElementById('contractModal').addEventListener('click', (e) => {
-    if (e.target.id === 'contractModal') {
-        document.getElementById('contractModal').classList.remove('active');
-    }
-});
+// تحديد درجة الأولوية حسب تاريخ الانتهاء
+function getUrgencyClass(endDateStr) {
+    const endDate = parseDate(endDateStr);
+    const today = new Date();
+    const diffTime = endDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return 'expired';
+    if (diffDays <= 30) return 'critical';
+    if (diffDays <= 180) return 'warning';
+    if (diffDays <= 365) return 'notice';
+    return 'normal';
+}
 
-// ========== Utility Functions ==========
+// تحويل التاريخ من نص إلى كائن Date
 function parseDate(dateStr) {
-    // Parse DD/MM/YYYY format
     const parts = dateStr.split('/');
     return new Date(parts[2], parts[1] - 1, parts[0]);
 }
 
-// ========== Export for debugging ==========
-window.appDebug = {
-    allContracts,
-    expiryAnalysis,
-    universityAnalysis,
-    departmentAnalysis,
-    statistics
-};
+// عرض تفاصيل العقد
+function showContractDetails(contractId) {
+    const contract = contractsData.find(c => c.id === contractId);
+    
+    if (!contract) return;
+    
+    const html = `
+        <div class="modal-overlay" onclick="closeModal()">
+            <div class="modal-content contract-details" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>تفاصيل العقد</h2>
+                    <button class="close-btn" onclick="closeModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <strong>الجامعة:</strong>
+                            <span>${contract.university}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>البرنامج:</strong>
+                            <span>${contract.program}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>الدرجة العلمية:</strong>
+                            <span>${contract.degree}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>الإدارة المختصة:</strong>
+                            <span>${contract.department}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>حالة العقد:</strong>
+                            <span class="status-badge status-${contract.status}">${contract.status}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>تاريخ بداية العقد:</strong>
+                            <span>${contract.contractStart}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>تاريخ انتهاء العقد:</strong>
+                            <span>${contract.contractEnd}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>نسبة الإنجاز:</strong>
+                            <span>${contract.progress}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>تاريخ استلام الوثائق:</strong>
+                            <span>${contract.docsReceived}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>حالة اتباع شروط استلام الوثائق:</strong>
+                            <span class="status-badge">${contract.docsComplianceStatus}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>تاريخ تحديث الوثائق:</strong>
+                            <span>${contract.docsUpdated}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>حالة تحديث الوثائق:</strong>
+                            <span class="status-badge">${contract.docsUpdatedStatus}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>تاريخ جدولة الزيارة:</strong>
+                            <span>${contract.visitScheduled}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>حالة اتباع شروط جدولة الزيارة:</strong>
+                            <span class="status-badge">${contract.visitComplianceStatus}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// إغلاق النافذة المنبثقة
+function closeModal() {
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => modal.remove());
+}
+
+// التنقل بين الأقسام
+function showSection(sectionId) {
+    // إخفاء جميع الأقسام
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // إخفاء جميع أزرار التبويب النشطة
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // إظهار القسم المطلوب
+    document.getElementById(sectionId).classList.add('active');
+    
+    // تفعيل زر التبويب
+    event.target.classList.add('active');
+}
