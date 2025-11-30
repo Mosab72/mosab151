@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة عقود الاعتماد الأكاديمي - 445 عقد</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="main-header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1>نظام إدارة عقود الاعتماد الأكاديمي</h1>
+                    <p class="subtitle">المركز الوطني للتقويم والاعتماد الأكاديمي</p>
+                </div>
+                <div class="stats-summary">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalContracts">445</span>
+                        <span class="stat-label">إجمالي العقود</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalUniversities">29</span>
+                        <span class="stat-label">جامعة</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number">5</span>
+                        <span class="stat-label">إدارات مختصة</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <div class="container">
+            <ul class="nav-menu">
+                <li><a href="#overview" class="nav-link active" data-section="overview">نظرة عامة</a></li>
+                <li><a href="#expiry" class="nav-link" data-section="expiry">حسب تاريخ الانتهاء</a></li>
+                <li><a href="#universities" class="nav-link" data-section="universities">حسب الجامعات</a></li>
+                <li><a href="#departments" class="nav-link" data-section="departments">حسب الإدارات</a></li>
+                <li><a href="#programs" class="nav-link" data-section="programs">حسب التخصصات</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Overview Section -->
+            <section id="overview" class="content-section active">
+                <h2 class="section-title">نظرة عامة على العقود</h2>
+                
+                <div class="overview-grid">
+                    <!-- Expiry Summary -->
+                    <div class="overview-card">
+                        <h3>التوزيع حسب تاريخ الانتهاء</h3>
+                        <div class="expiry-summary">
+                            <div class="expiry-item urgent">
+                                <span class="expiry-count" id="before2024">0</span>
+                                <span class="expiry-label">منتهية (قبل 2025)</span>
+                            </div>
+                            <div class="expiry-item warning">
+                                <span class="expiry-count" id="h1_2025">0</span>
+                                <span class="expiry-label">النصف الأول 2025</span>
+                            </div>
+                            <div class="expiry-item attention">
+                                <span class="expiry-count" id="h2_2025">0</span>
+                                <span class="expiry-label">النصف الثاني 2025</span>
+                            </div>
+                            <div class="expiry-item safe">
+                                <span class="expiry-count" id="y2026Plus">0</span>
+                                <span class="expiry-label">2026 وما بعد</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Departments Summary -->
+                    <div class="overview-card">
+                        <h3>التوزيع حسب الإدارات المختصة</h3>
+                        <div class="departments-summary" id="deptSummary">
+                            <!-- Will be populated by JS -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Universities -->
+                <div class="overview-card full-width">
+                    <h3>أبرز الجامعات حسب عدد العقود</h3>
+                    <div class="top-universities" id="topUniversities">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Expiry Analysis Section -->
+            <section id="expiry" class="content-section">
+                <h2 class="section-title">تحليل العقود حسب تاريخ الانتهاء</h2>
+                
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-period="all">الكل</button>
+                    <button class="tab-btn urgent-tab" data-period="before2024">منتهية (قبل 2025)</button>
+                    <button class="tab-btn warning-tab" data-period="h1_2025">النصف الأول 2025</button>
+                    <button class="tab-btn attention-tab" data-period="h2_2025">النصف الثاني 2025</button>
+                    <button class="tab-btn safe-tab" data-period="y2026Plus">2026 وما بعد</button>
+                </div>
+                
+                <div class="contracts-grid" id="expiryContracts">
+                    <!-- Will be populated by JS -->
+                </div>
+            </section>
+
+            <!-- Universities Section -->
+            <section id="universities" class="content-section">
+                <h2 class="section-title">العقود حسب الجامعات</h2>
+                
+                <div class="search-box">
+                    <input type="text" id="uniSearch" placeholder="ابحث عن جامعة...">
+                </div>
+                
+                <div class="universities-list" id="universitiesList">
+                    <!-- Will be populated by JS -->
+                </div>
+            </section>
+
+            <!-- Departments Section -->
+            <section id="departments" class="content-section">
+                <h2 class="section-title">العقود حسب الإدارات المختصة</h2>
+                
+                <div class="departments-grid" id="departmentsList">
+                    <!-- Will be populated by JS -->
+                </div>
+            </section>
+
+            <!-- Programs Section -->
+            <section id="programs" class="content-section">
+                <h2 class="section-title">العقود حسب التخصصات</h2>
+                
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-dept="all">جميع التخصصات</button>
+                    <button class="tab-btn" data-dept="العلوم الهندسية والحاسوبية">الهندسية والحاسوبية</button>
+                    <button class="tab-btn" data-dept="العلوم الصحية">الصحية</button>
+                    <button class="tab-btn" data-dept="العلوم الإنسانية والتربوية">الإنسانية والتربوية</button>
+                    <button class="tab-btn" data-dept="العلوم الإسلامية والعربية">الإسلامية والعربية</button>
+                    <button class="tab-btn" data-dept="التخصصات العلمية">العلمية</button>
+                </div>
+                
+                <div class="programs-list" id="programsList">
+                    <!-- Will be populated by JS -->
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Contract Detail Modal -->
+    <div id="contractModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="contractDetail">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container">
+            <p>المركز الوطني للتقويم والاعتماد الأكاديمي &copy; 2024</p>
+            <p class="footer-note">آخر تحديث: <span id="lastUpdate"></span></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="contracts_data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
